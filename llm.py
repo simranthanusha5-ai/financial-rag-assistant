@@ -1,11 +1,17 @@
-import ollama
+from groq import Groq
+import os
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 def ask_llm(context, question):
     prompt = f"""
 You are a document question-answering assistant.
 
-Use ONLY the provided context to answer the question.
-Do not make up information.
+Use ONLY the provided context.
+Do not hallucinate.
+If answer is missing, say Not Found.
 
 Context:
 {context}
@@ -13,21 +19,18 @@ Context:
 Question:
 {question}
 
-Instructions:
-- If the document is financial, answer with financial values clearly.
-- If the document is a resume, answer based on skills, education, projects, experience, certifications, and achievements.
-- If the answer is not present in the context, say "Not Found".
-- Keep the answer clear and structured.
+Answer clearly and accurately.
 """
 
-    response = ollama.chat(
-        model="qwen2.5:3b",
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        temperature=0.2
     )
 
-    return response["message"]["content"]
+    return response.choices[0].message.content
