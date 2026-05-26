@@ -2,9 +2,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def chunk_text(text):
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,
-        chunk_overlap=80
+        chunk_size=600,
+        chunk_overlap=120
     )
 
-    chunks = splitter.split_text(text)
-    return chunks
+    return splitter.split_text(text)
