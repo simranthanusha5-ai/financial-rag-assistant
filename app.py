@@ -17,15 +17,15 @@ st.markdown("""
 <style>
 .stApp {
     background:
-        radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(255,255,255,0.05), transparent 30%),
+        radial-gradient(circle at top left, rgba(255,255,255,0.07), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.04), transparent 30%),
         #050505;
     color: #f5f5f5;
 }
 
 .block-container {
-    max-width: 1200px;
-    padding-top: 1.5rem;
+    max-width: 1180px;
+    padding-top: 1.2rem;
 }
 
 [data-testid="stSidebar"] {
@@ -35,7 +35,7 @@ st.markdown("""
 
 .hero {
     text-align: center;
-    padding: 2.2rem 1rem 1.6rem 1rem;
+    padding: 2rem 1rem 1.4rem 1rem;
     animation: fadeUp 0.8s ease-in-out;
 }
 
@@ -65,21 +65,29 @@ st.markdown("""
     border: 1px solid #2b2b2b;
     color: #d4d4d4;
     font-size: 13px;
+    transition: all 0.25s ease;
 }
 
-.card {
-    background: rgba(15, 15, 15, 0.92);
+.badge:hover {
+    border-color: #ffffff;
+    box-shadow: 0 0 18px rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+}
+
+.upload-section, .ask-section {
+    background: rgba(15, 15, 15, 0.94);
     border: 1px solid #262626;
     border-radius: 24px;
     padding: 26px;
     box-shadow: 0 20px 55px rgba(0,0,0,0.35);
     animation: fadeUp 1s ease-in-out;
+    transition: all 0.25s ease;
 }
 
-.card:hover {
-    border-color: #525252;
+.upload-section:hover, .ask-section:hover {
+    border-color: #ffffff55;
+    box-shadow: 0 0 30px rgba(255,255,255,0.10);
     transform: translateY(-2px);
-    transition: 0.25s ease;
 }
 
 .section-title {
@@ -94,7 +102,13 @@ st.markdown("""
     border-radius: 18px;
     padding: 18px;
     text-align: center;
-    animation: fadeUp 0.6s ease-in-out;
+    transition: all 0.25s ease;
+}
+
+.metric:hover {
+    border-color: #ffffff;
+    box-shadow: 0 0 22px rgba(255,255,255,0.12);
+    transform: translateY(-2px);
 }
 
 .metric-value {
@@ -137,6 +151,13 @@ st.markdown("""
     margin-bottom: 10px;
     color: #e5e5e5;
     font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+.example-box:hover {
+    border-color: #ffffff;
+    box-shadow: 0 0 20px rgba(255,255,255,0.11);
+    transform: translateX(4px);
 }
 
 .small {
@@ -149,6 +170,12 @@ st.markdown("""
     border: 1px dashed #404040;
     border-radius: 18px;
     padding: 12px;
+    transition: all 0.25s ease;
+}
+
+.stFileUploader:hover {
+    border-color: #ffffff;
+    box-shadow: 0 0 20px rgba(255,255,255,0.10);
 }
 
 .stTextInput input {
@@ -157,6 +184,11 @@ st.markdown("""
     border: 1px solid #404040 !important;
     border-radius: 14px !important;
     height: 50px;
+}
+
+.stTextInput input:focus {
+    border-color: #ffffff !important;
+    box-shadow: 0 0 18px rgba(255,255,255,0.12) !important;
 }
 
 .stButton > button {
@@ -233,7 +265,8 @@ st.markdown("""
 left, right = st.columns([1, 1.5], gap="large")
 
 with left:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+
     st.markdown('<div class="section-title">Upload PDF</div>', unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
@@ -266,16 +299,22 @@ with left:
     for i, prompt in enumerate(prompts):
         if st.button(prompt, key=f"prompt_{i}"):
             st.session_state.question_text = prompt
+            st.session_state.answer = ""
+            st.session_state.context = ""
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="ask-section">', unsafe_allow_html=True)
+
     st.markdown('<div class="section-title">Ask your document</div>', unsafe_allow_html=True)
 
     if uploaded_file is None:
         st.info("Upload a PDF to start.")
-        st.markdown('<div class="empty-answer">Your answer will appear here after you upload a PDF and ask a question.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="empty-answer">Your answer will appear here after you upload a PDF and ask a question.</div>',
+            unsafe_allow_html=True
+        )
 
     else:
         with open("uploaded.pdf", "wb") as f:
@@ -300,11 +339,20 @@ with right:
 
         m1, m2, m3 = st.columns(3)
         with m1:
-            st.markdown(f'<div class="metric"><div class="metric-value">{len(text):,}</div><div class="metric-label">Characters</div></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="metric"><div class="metric-value">{len(text):,}</div><div class="metric-label">Characters</div></div>',
+                unsafe_allow_html=True
+            )
         with m2:
-            st.markdown(f'<div class="metric"><div class="metric-value">{len(chunks)}</div><div class="metric-label">Chunks</div></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="metric"><div class="metric-value">{len(chunks)}</div><div class="metric-label">Chunks</div></div>',
+                unsafe_allow_html=True
+            )
         with m3:
-            st.markdown('<div class="metric"><div class="metric-value">Ready</div><div class="metric-label">RAG Status</div></div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="metric"><div class="metric-value">Ready</div><div class="metric-label">RAG Status</div></div>',
+                unsafe_allow_html=True
+            )
 
         st.write("")
 
@@ -337,9 +385,15 @@ with right:
         st.markdown("### Answer")
 
         if st.session_state.answer:
-            st.markdown(f'<div class="answer">{st.session_state.answer}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="answer">{st.session_state.answer}</div>',
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown('<div class="empty-answer">Ask a question to generate an answer.</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="empty-answer">Ask a question to generate an answer.</div>',
+                unsafe_allow_html=True
+            )
 
         with st.expander("Retrieved Context"):
             st.write(st.session_state.context if st.session_state.context else "No context retrieved yet.")
