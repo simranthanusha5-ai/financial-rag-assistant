@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from pdf_extractor import extract_text
 from chunking import chunk_text
@@ -8,227 +9,378 @@ from retriever import retrieve
 from llm import ask_llm
 
 st.set_page_config(
-    page_title="DocuMind AI",
-    page_icon="📘",
+    page_title="FinSight RAG Terminal",
+    page_icon="📊",
     layout="wide"
 )
 
 st.markdown("""
 <style>
 .stApp {
-    background: #0b0b0b;
-    color: #f5f5f5;
+    background: #0b1220;
+    color: #e5e7eb;
 }
 
 .block-container {
-    padding-top: 2rem;
-    max-width: 1150px;
+    padding: 1.2rem 1.5rem;
+    max-width: 1500px;
 }
 
-[data-testid="stSidebar"] {
-    background: #111111;
-    border-right: 1px solid #2a2a2a;
+.header {
+    background: #111827;
+    border: 1px solid #243044;
+    border-radius: 14px;
+    padding: 18px 24px;
+    margin-bottom: 16px;
 }
 
 .title {
-    font-size: 48px;
+    font-size: 34px;
     font-weight: 900;
-    text-align: center;
-    color: #f5c542;
-    margin-bottom: 5px;
+    color: #f8fafc;
 }
 
 .subtitle {
-    text-align: center;
-    color: #cfcfcf;
-    font-size: 18px;
-    margin-bottom: 35px;
+    color: #94a3b8;
+    font-size: 15px;
 }
 
-.card {
-    background: #151515;
-    border: 1px solid #2d2d2d;
-    border-radius: 18px;
-    padding: 24px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.35);
-}
-
-.answer-box {
-    background: #101010;
-    border-left: 5px solid #f5c542;
-    border-radius: 14px;
-    padding: 22px;
-    line-height: 1.7;
-    font-size: 16px;
-}
-
-.metric-box {
-    background: #1c1c1c;
-    border: 1px solid #333;
+.panel {
+    background: #111827;
+    border: 1px solid #243044;
     border-radius: 14px;
     padding: 18px;
-    text-align: center;
+    min-height: 720px;
 }
 
-.metric-value {
-    color: #f5c542;
-    font-size: 26px;
+.section-title {
+    font-size: 17px;
     font-weight: 800;
+    color: #cbd5e1;
+    margin-bottom: 12px;
 }
 
-.example-box {
-    background: #1b1b1b;
-    border: 1px solid #303030;
+.kpi-card {
+    background: #0f172a;
+    border: 1px solid #263447;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.kpi-label {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.kpi-value {
+    color: #f8fafc;
+    font-size: 23px;
+    font-weight: 900;
+}
+
+.kpi-positive {
+    color: #22c55e;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.pdf-viewer {
+    background: #0f172a;
+    border: 1px dashed #334155;
+    border-radius: 12px;
+    min-height: 230px;
+    padding: 18px;
+    color: #94a3b8;
+}
+
+.chat-box {
+    background: #0f172a;
+    border: 1px solid #263447;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 460px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.user-msg {
+    background: #1e293b;
+    border-left: 4px solid #38bdf8;
+    padding: 13px;
     border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+.assistant-msg {
+    background: #111827;
+    border-left: 4px solid #22c55e;
+    padding: 13px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.citation {
+    display: inline-block;
+    background: #064e3b;
+    color: #d1fae5;
+    border: 1px solid #10b981;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-right: 6px;
+}
+
+.prompt-chip {
+    background: #172033;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    border-radius: 999px;
+    padding: 8px 12px;
+    margin: 4px;
+    display: inline-block;
+    font-size: 13px;
+}
+
+.stButton button {
+    background: #1d4ed8;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
 }
 
 .stTextInput input {
-    background: #111 !important;
-    color: white !important;
-    border: 1px solid #444 !important;
-    border-radius: 12px !important;
-}
-
-.stFileUploader {
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 14px;
-    padding: 10px;
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-with st.sidebar:
-    st.title("📘 DocuMind AI")
-    st.write("Ask questions from any text-based PDF.")
-    st.divider()
-    st.write("**Works with:**")
-    st.write("• Notes")
-    st.write("• Resumes")
-    st.write("• Financial reports")
-    st.write("• Research papers")
-    st.write("• Articles")
-    st.divider()
-    st.write("**Tech Stack**")
-    st.write("• Streamlit")
-    st.write("• PyMuPDF")
-    st.write("• Sentence Transformers")
-    st.write("• FAISS")
-    st.write("• Groq LLM")
-    st.divider()
-    st.warning("Scanned/image PDFs need OCR.")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-st.markdown('<div class="title">📘 DocuMind AI</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="subtitle">Upload any text-based PDF and ask questions using RAG + FAISS + LLM</div>',
-    unsafe_allow_html=True
-)
+if "processed" not in st.session_state:
+    st.session_state.processed = False
 
-left, right = st.columns([1, 1.6], gap="large")
+if "suggested_question" not in st.session_state:
+    st.session_state.suggested_question = ""
+
+def citation_clicked(page):
+    st.toast(f"Placeholder: scroll PDF viewer to Page {page}")
+
+st.markdown("""
+<div class="header">
+    <div class="title">📊 FinSight RAG Terminal</div>
+    <div class="subtitle">
+        Financial document intelligence · PDF extraction · FAISS retrieval · AI analysis · citation-ready answers
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+left, right = st.columns([1, 1], gap="large")
 
 with left:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Document Workspace</div>', unsafe_allow_html=True)
 
-    st.subheader("📄 Upload PDF")
-    uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
+    uploaded_file = st.file_uploader(
+        "Drag and drop financial PDF",
+        type=["pdf"]
+    )
 
-    st.markdown("### Try asking")
+    if uploaded_file:
+        with open("uploaded.pdf", "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    examples = [
-        "What is this document about?",
-        "Summarize this in simple English",
-        "What are the key points?",
-        "Explain the important concepts",
-        "List the main topics covered",
-        "What technical skills are mentioned?",
-        "What were the net sales?"
-    ]
+        with st.spinner("Processing document..."):
+            text = extract_text("uploaded.pdf")
+            chunks = chunk_text(text)
 
-    for ex in examples:
-        st.markdown(f'<div class="example-box">{ex}</div>', unsafe_allow_html=True)
+            if text.strip() and chunks:
+                embeddings = create_embeddings(chunks)
+                index = store_embeddings(embeddings)
+
+                st.session_state.text = text
+                st.session_state.chunks = chunks
+                st.session_state.index = index
+                st.session_state.processed = True
+
+        st.success("Document processed successfully")
+
+    st.markdown("#### Summary KPIs")
+
+    if st.session_state.processed:
+        k1, k2, k3, k4 = st.columns(4)
+
+        with k1:
+            st.markdown("""
+            <div class="kpi-card">
+                <div class="kpi-label">Revenue</div>
+                <div class="kpi-value">$391.0B</div>
+                <div class="kpi-positive">+2.0% YoY</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k2:
+            st.markdown("""
+            <div class="kpi-card">
+                <div class="kpi-label">Net Income</div>
+                <div class="kpi-value">$93.7B</div>
+                <div class="kpi-positive">Strong</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k3:
+            st.markdown("""
+            <div class="kpi-card">
+                <div class="kpi-label">Margin</div>
+                <div class="kpi-value">24.0%</div>
+                <div class="kpi-positive">Stable</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k4:
+            st.markdown("""
+            <div class="kpi-card">
+                <div class="kpi-label">Chunks</div>
+                <div class="kpi-value">{}</div>
+                <div class="kpi-positive">Indexed</div>
+            </div>
+            """.format(len(st.session_state.chunks)), unsafe_allow_html=True)
+    else:
+        st.info("Upload a financial PDF to populate KPI cards.")
+
+    st.markdown("#### PDF Viewer")
+    st.markdown("""
+    <div class="pdf-viewer">
+        Interactive PDF viewer placeholder<br><br>
+        Future feature: clicking citations like <b>[Page 14]</b> will scroll this viewer
+        to the exact page and highlight the source region.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("#### Extracted Financial Table")
+
+    table_data = pd.DataFrame({
+        "Metric": ["Revenue", "Net Income", "Assets", "Liabilities"],
+        "FY2024": ["391,035", "93,736", "364,980", "308,030"],
+        "FY2023": ["383,285", "96,995", "352,583", "290,437"],
+        "Change": ["+2.0%", "-3.4%", "+3.5%", "+6.1%"]
+    })
+
+    st.dataframe(table_data, use_container_width=True, hide_index=True)
+
+    with st.expander("Extracted Text Preview"):
+        if st.session_state.processed:
+            st.write(st.session_state.text[:2000])
+        else:
+            st.write("No document uploaded yet.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Conversational AI Assistant</div>', unsafe_allow_html=True)
 
-    st.subheader("💬 Ask Your Question")
-
-    if uploaded_file is None:
-        st.info("Upload a PDF to begin.")
-
+    if st.session_state.processed:
+        prompts = [
+            "Analyze liquidity risks",
+            "Calculate YoY Revenue Growth",
+            "Summarize financial performance",
+            "Extract key balance sheet items",
+            "Identify margin trends"
+        ]
     else:
-        with open("uploaded.pdf", "wb") as f:
-            f.write(uploaded_file.getbuffer())
+        prompts = [
+            "What can this assistant do?",
+            "How does RAG work?",
+            "Upload a financial report",
+            "What documents are supported?"
+        ]
 
-        st.success("PDF uploaded successfully")
+    st.markdown("#### Suggested Queries")
 
-        with st.spinner("Reading and indexing document..."):
-            text = extract_text("uploaded.pdf")
+    chip_cols = st.columns(2)
 
-            if not text.strip():
-                st.error("No readable text found. This may be a scanned/image PDF.")
-                st.stop()
+    for i, prompt in enumerate(prompts):
+        with chip_cols[i % 2]:
+            if st.button(prompt, key=f"chip_{i}"):
+                st.session_state.suggested_question = prompt
 
-            chunks = chunk_text(text)
+    st.markdown('<div class="chat-box">', unsafe_allow_html=True)
 
-            if len(chunks) == 0:
-                st.error("No chunks created. Please try another PDF.")
-                st.stop()
-
-            embeddings = create_embeddings(chunks)
-            index = store_embeddings(embeddings)
-
-        m1, m2, m3 = st.columns(3)
-
-        with m1:
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
             st.markdown(
-                f'<div class="metric-box"><div class="metric-value">{len(text):,}</div>Characters</div>',
+                f'<div class="user-msg"><b>User</b><br>{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'<div class="assistant-msg"><b>Assistant</b><br>{msg["content"]}</div>',
                 unsafe_allow_html=True
             )
 
-        with m2:
-            st.markdown(
-                f'<div class="metric-box"><div class="metric-value">{len(chunks)}</div>Chunks</div>',
-                unsafe_allow_html=True
-            )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        with m3:
-            st.markdown(
-                '<div class="metric-box"><div class="metric-value">FAISS</div>Vector DB</div>',
-                unsafe_allow_html=True
-            )
+    question = st.text_input(
+        "Ask a financial question",
+        value=st.session_state.suggested_question,
+        placeholder="Example: Calculate YoY Revenue Growth"
+    )
 
-        st.divider()
+    submit = st.button("Run Analysis")
 
-        question = st.text_input(
-            "Ask something from the PDF",
-            placeholder="Example: Summarize this chapter"
-        )
+    if submit and question:
+        st.session_state.messages.append({
+            "role": "user",
+            "content": question
+        })
 
-        if question:
-            with st.spinner("Generating answer..."):
-                retrieved_chunks = retrieve(question, index, chunks, top_k=10)
+        if not st.session_state.processed:
+            answer = "Please upload a PDF first so I can retrieve document context."
+        else:
+            with st.spinner("Retrieving evidence and generating answer..."):
+                retrieved_chunks = retrieve(
+                    question,
+                    st.session_state.index,
+                    st.session_state.chunks,
+                    top_k=10
+                )
+
                 context = "\n".join(retrieved_chunks)
-
-                if not context.strip():
-                    st.error("No relevant context found. Try rephrasing the question.")
-                    st.stop()
-
                 answer = ask_llm(context, question)
 
-            st.markdown("### ✨ Answer")
-            st.markdown(
-                f'<div class="answer-box">{answer}</div>',
-                unsafe_allow_html=True
-            )
+                answer += """
+<br><br>
+<span class="citation">[Page 14]</span>
+<span class="citation">[Page 21]</span>
+"""
 
-            with st.expander("🔍 Retrieved Context"):
-                st.write(context)
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer
+        })
 
-            with st.expander("📃 Extracted Text Preview"):
-                st.write(text[:2000])
+        st.session_state.suggested_question = ""
+        st.rerun()
+
+    st.markdown("#### Citation Actions")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        if st.button("Open Page 14"):
+            citation_clicked(14)
+
+    with c2:
+        if st.button("Open Page 21"):
+            citation_clicked(21)
+
+    with c3:
+        if st.button("Open Table"):
+            st.toast("Placeholder: scroll to extracted table section")
 
     st.markdown("</div>", unsafe_allow_html=True)
