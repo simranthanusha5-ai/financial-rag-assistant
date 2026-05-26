@@ -170,12 +170,18 @@ st.markdown("""
     border: 1px dashed #404040;
     border-radius: 18px;
     padding: 12px;
+    margin-top: 0 !important;
     transition: all 0.25s ease;
 }
 
 .stFileUploader:hover {
     border-color: #ffffff;
     box-shadow: 0 0 20px rgba(255,255,255,0.10);
+}
+
+.stTextInput {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
 .stTextInput input {
@@ -212,6 +218,21 @@ div[data-testid="stExpander"] {
     background: #0f0f0f;
     border: 1px solid #252525;
     border-radius: 14px;
+}
+
+/* remove unwanted labels / empty bars */
+div[data-testid="stTextInput"] > label {
+    display: none !important;
+}
+
+div[data-testid="stFileUploader"] > label {
+    display: none !important;
+}
+
+section[data-testid="stFileUploaderDropzone"] {
+    background: #111111 !important;
+    border: 1px dashed #404040 !important;
+    border-radius: 18px !important;
 }
 
 @keyframes fadeUp {
@@ -270,13 +291,12 @@ with left:
     st.markdown('<div class="section-title">Upload PDF</div>', unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
-        "Choose a PDF file",
+        "Upload PDF",
         type=["pdf"],
         label_visibility="collapsed"
     )
 
     st.markdown('<p class="small">Best results with text-based PDFs.</p>', unsafe_allow_html=True)
-    st.divider()
 
     st.markdown("#### Suggested prompts")
 
@@ -354,12 +374,11 @@ with right:
                 unsafe_allow_html=True
             )
 
-        st.write("")
-
         question = st.text_input(
             "Ask a question",
             value=st.session_state.question_text,
-            placeholder="Example: Summarize this PDF in simple words"
+            placeholder="Example: Summarize this PDF in simple words",
+            label_visibility="collapsed"
         )
 
         col_a, col_b = st.columns([1, 4])
